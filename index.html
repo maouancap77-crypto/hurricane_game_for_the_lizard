@@ -1216,6 +1216,10 @@
             // Limpar canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            // Desenhar fundo do mapa (planície texana - verde único)
+            ctx.fillStyle = '#90EE90';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
              // Adiciona a margem preta do mapa jogável
             ctx.save();
             ctx.strokeStyle = "black";
@@ -1227,11 +1231,6 @@
                 gameState.mapSize
             );
             ctx.restore();
-
-            
-            // Desenhar fundo do mapa (planície texana - verde único)
-            ctx.fillStyle = '#90EE90';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             // Desenhar prédios
             gameState.buildings.forEach(building => {
