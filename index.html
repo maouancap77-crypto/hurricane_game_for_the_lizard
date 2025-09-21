@@ -960,7 +960,7 @@
 
             //Com sorte o sistema de Spawn das casas randomicamente enquanto o jogo roda.
             houseSpawnTimer += 1/60;
-            if (houseSpawnTimer > 10) { // a cada 10 segundos
+            if (houseSpawnTimer > 5) { // a cada 5 segundos, por que 5 é melhor que 10 aaaaaaaaah PURGEEEEEE!
                 let x, y;
                 let valid = false;
                 let tries = 0;
@@ -974,7 +974,12 @@
                     });
                     tries++;
                 }
-                if (valid) gameState.buildings.push(new Building(x, y, 'house'));
+                if (valid) {
+                    // Sorteia um tipo de edifício
+                    const types = ['house', 'skyscraper', 'factory'];
+                    const type = types[Math.floor(Math.random() * types.length)];
+                    gameState.buildings.push(new Building(x, y, type));
+                }
                 houseSpawnTimer = 0;
             }
 
