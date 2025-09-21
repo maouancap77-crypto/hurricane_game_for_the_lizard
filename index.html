@@ -859,30 +859,50 @@
         function hurricaneCanibalism() {
             // SmallHurricanes podem ser absorvidos por inimigos
             gameState.enemies.forEach(enemy => {
-                gameState.smallHurricanes.forEach((small, idx) => {
+                for (let i = gameState.smallHurricanes.length - 1; i >= 0; i--) {
+                    let small = gameState.smallHurricanes[i];
                     const dx = enemy.x - small.x;
                     const dy = enemy.y - small.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
-                    if (enemy.size > small.size * 1.2 && dist < (enemy.size + small.size) * 0.7) {
-                        // Absorve
-                        enemy.size = Math.min(enemy.maxSize, enemy.size + small.size / 10);
-                        gameState.smallHurricanes.splice(idx, 1);
+                    if (enemy.size > small.size * 1.2 && dist < (enemy.size + small.size) * 0.7 && small.canBeAbsorbed) {
+                        enemy.size = Math.min(enemy.maxSize, enemy.size + small.size / 3); // PATCH: crescimento mais rápido
+                        gameState.smallHurricanes.splice(i, 1);
                     }
-                });
+                }
             });
+        
             // Inimigos absorvem outros inimigos menores
-            for (let i = 0; i < gameState.enemies.length; i++) {
-                for (let j = 0; j < gameState.enemies.length; j++) {
+            for (let i = gameState.enemies.length - 1; i >= 0; i--) {
+                let e1 = gameState.enemies[i];
+                for (let j = gameState.enemies.length - 1; j >= 0; j--) {
                     if (i !== j) {
-                        let e1 = gameState.enemies[i];
                         let e2 = gameState.enemies[j];
                         const dx = e1.x - e2.x;
                         const dy = e1.y - e2.y;
                         const dist = Math.sqrt(dx*dx + dy*dy);
-                        if (e1.size > e2.size * 1.2 && dist < (e1.size + e2.size) * 0.7) {
-                            e1.size = Math.min(e1.maxSize, e1.size + e2.size / 12);
+                        if (e1.size > e2.size * 1.18 && dist < (e1.size + e2.size) * 0.7) {
+                            e1.size = Math.min(e1.maxSize, e1.size + e2.size / 7); // PATCH: crescimento acelerado
                             gameState.enemies.splice(j, 1);
-                            if (j < i) i--; // ajustar índice
+                            if (j < i) i--;
+                            break;
+                        }
+                    }
+                }
+            }
+        
+            // (Opcional) SmallHurricanes podem absorver outros menores
+            for (let i = gameState.smallHurricanes.length - 1; i >= 0; i--) {
+                let s1 = gameState.smallHurricanes[i];
+                for (let j = gameState.smallHurricanes.length - 1; j >= 0; j--) {
+                    if (i !== j) {
+                        let s2 = gameState.smallHurricanes[j];
+                        const dx = s1.x - s2.x;
+                        const dy = s1.y - s2.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (s1.size > s2.size * 1.2 && dist < (s1.size + s2.size) * 0.6 && s2.canBeAbsorbed) {
+                            s1.size = Math.min(s1.maxSize, s1.size + s2.size / 3);
+                            gameState.smallHurricanes.splice(j, 1);
+                            if (j < i) i--;
                             break;
                         }
                     }
@@ -892,7 +912,7 @@
 
 
         
-        // Função de atualização
+        // Função de atualização/Calanguinho isso aqui é o que mantém o jogo rodando ela atualiza, e checa bem como age a cada fps do jogo. 
         function update() {
             if (!gameState.gameRunning) return;
 
