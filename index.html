@@ -852,6 +852,43 @@
 
         // timer para las casitas respawanarem em tese. 
         let houseSpawnTimer = 0;
+
+        // agora os furacoes podem se comer, UIIIIIIIII delicia! ALTISSIMA PEDERASTIAAAAAAAAAA!
+        function hurricaneCanibalism() {
+            // SmallHurricanes podem ser absorvidos por inimigos
+            gameState.enemies.forEach(enemy => {
+                gameState.smallHurricanes.forEach((small, idx) => {
+                    const dx = enemy.x - small.x;
+                    const dy = enemy.y - small.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (enemy.size > small.size * 1.2 && dist < (enemy.size + small.size) * 0.7) {
+                        // Absorve
+                        enemy.size = Math.min(enemy.maxSize, enemy.size + small.size / 10);
+                        gameState.smallHurricanes.splice(idx, 1);
+                    }
+                });
+            });
+            // Inimigos absorvem outros inimigos menores
+            for (let i = 0; i < gameState.enemies.length; i++) {
+                for (let j = 0; j < gameState.enemies.length; j++) {
+                    if (i !== j) {
+                        let e1 = gameState.enemies[i];
+                        let e2 = gameState.enemies[j];
+                        const dx = e1.x - e2.x;
+                        const dy = e1.y - e2.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (e1.size > e2.size * 1.2 && dist < (e1.size + e2.size) * 0.7) {
+                            e1.size = Math.min(e1.maxSize, e1.size + e2.size / 12);
+                            gameState.enemies.splice(j, 1);
+                            if (j < i) i--; // ajustar índice
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+
         
         // Função de atualização
         function update() {
@@ -873,6 +910,9 @@
             inputX += touchDirection.x;
             inputY += touchDirection.y;
 
+            //Troca troca dos ventos.
+            hurricaneCanibalism();
+            
             // Aplicar força rotacional (física de furacão)
             const force = 0.5;
             player.vx += inputX * force;
