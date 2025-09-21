@@ -1216,6 +1216,19 @@
             // Limpar canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+             // Adiciona a margem preta do mapa jogável
+            ctx.save();
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 5;
+            ctx.strokeRect(
+                -gameState.camera.x,
+                -gameState.camera.y,
+                gameState.mapSize,
+                gameState.mapSize
+            );
+            ctx.restore();
+
+            
             // Desenhar fundo do mapa (planície texana - verde único)
             ctx.fillStyle = '#90EE90';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
