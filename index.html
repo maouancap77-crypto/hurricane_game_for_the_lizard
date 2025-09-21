@@ -218,7 +218,9 @@
                 this.particles = [];
                 this.targetPlayer = false;
                 this.huntingBuildings = false;
+                this.state = "caçando crescimento"; // ["fugindo", "caçando crescimento", "perseguindo player"]
                 this.target = null;
+                
                 
                 // Criar partículas
                 for (let i = 0; i < 20; i++) {
