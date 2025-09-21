@@ -154,6 +154,7 @@
                 vy: 0,
                 rotation: 0,
                 size: 25,
+                maxSize: 150,
                 energy: 100,
                 particles: []
             },
@@ -165,6 +166,7 @@
             smallHurricanes: [],
             windZones: [],
             buildings: [],
+            inhabitants: [],
             cities: [],
             keys: {},
             gameTime: 0,
@@ -211,9 +213,12 @@
                 this.vx = 0;
                 this.vy = 0;
                 this.size = 40 + Math.random() * 30;
+                this.maxSize = 200;
                 this.rotation = 0;
                 this.particles = [];
                 this.targetPlayer = false;
+                this.huntingBuildings = false;
+                this.target = null;
                 
                 // Criar partículas
                 for (let i = 0; i < 20; i++) {
@@ -223,43 +228,112 @@
             }
 
             update() {
-                // IA simples - perseguir o jogador ocasionalmente
-                if (Math.random() < 0.01) {
-                    this.targetPlayer = !this.targetPlayer;
+                // IA inteligente - escolher entre caçar player ou destruir prédios
+                if (Math.random() < 0.02) {
+                    const playerDistance = Math.sqrt((this.x - gameState.player.x) ** 2 + (this.y - gameState.player.y) ** 2);
+                    
+                    // Se player estiver muito próximo, sempre perseguir
+                    if (playerDistance < 200) {
+                        this.targetPlayer = true;
+                        this.huntingBuildings = false;
+                    } else if (Math.random() < 0.6) {
+                        // 60% chance de caçar prédios, 40% de perseguir player
+                        this.huntingBuildings = true;
+                        this.targetPlayer = false;
+                        // Encontrar prédio mais próximo
+                        let nearestBuilding = null;
+                        let nearestDistance = Infinity;
+                        
+                        gameState.buildings.forEach(building => {
+                            if (!building.destroyed) {
+                                const dist = Math.sqrt((this.x - building.x) ** 2 + (this.y - building.y) ** 2);
+                                if (dist < nearestDistance) {
+                                    nearestDistance = dist;
+                                    nearestBuilding = building;
+                                }
+                            }
+                        });
+                        
+                        this.target = nearestBuilding;
+                    } else {
+                        this.targetPlayer = true;
+                        this.huntingBuildings = false;
+                    }
                 }
 
+                // Comportamento baseado no estado
                 if (this.targetPlayer) {
                     const dx = gameState.player.x - this.x;
                     const dy = gameState.player.y - this.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
                     
                     if (distance > 50) {
+                        this.vx += (dx / distance) * 0.4;
+                        this.vy += (dy / distance) * 0.4;
+                    }
+                } else if (this.huntingBuildings && this.target && !this.target.destroyed) {
+                    const dx = this.target.x - this.x;
+                    const dy = this.target.y - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance > 30) {
                         this.vx += (dx / distance) * 0.3;
                         this.vy += (dy / distance) * 0.3;
                     }
                 }
 
-                // Movimento aleatório
-                this.vx += (Math.random() - 0.5) * 0.5;
-                this.vy += (Math.random() - 0.5) * 0.5;
+                // Movimento aleatório menor
+                this.vx += (Math.random() - 0.5) * 0.3;
+                this.vy += (Math.random() - 0.5) * 0.3;
 
                 // Aplicar atrito
                 this.vx *= 0.98;
                 this.vy *= 0.98;
 
-                // Limitar velocidade
+                // Limitar velocidade baseada no tamanho
+                const maxSpeed = Math.max(1.5, 3 - (this.size / 50));
                 const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-                if (speed > 2) {
-                    this.vx = (this.vx / speed) * 2;
-                    this.vy = (this.vy / speed) * 2;
+                if (speed > maxSpeed) {
+                    this.vx = (this.vx / speed) * maxSpeed;
+                    this.vy = (this.vy / speed) * maxSpeed;
                 }
 
                 this.x += this.vx;
                 this.y += this.vy;
 
-                // Manter dentro dos limites
-                this.x = Math.max(this.size, Math.min(canvas.width - this.size, this.x));
-                this.y = Math.max(this.size, Math.min(canvas.height - this.size, this.y));
+                // Manter dentro dos limites do mapa
+                this.x = Math.max(this.size, Math.min(gameState.mapSize - this.size, this.x));
+                this.y = Math.max(this.size, Math.min(gameState.mapSize - this.size, this.y));
+
+                // Destruir prédios e crescer
+                gameState.buildings.forEach(building => {
+                    if (!building.destroyed && this.isCollidingWithBuilding(building)) {
+                        const damage = speed * 3; // Inimigos causam mais dano
+                        const points = building.takeDamage(damage);
+                        if (points > 0) {
+                            // Crescer ao destruir prédios
+                            this.size = Math.min(this.maxSize, this.size + 2);
+                            
+                            // Adicionar mais partículas ao crescer
+                            if (this.particles.length < this.size * 0.8) {
+                                for (let i = 0; i < 2; i++) {
+                                    this.particles.push(new Particle(this.x, this.y, Math.random() * this.size, 
+                                                                   0.1 + Math.random() * 0.1, '#ff4444'));
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Crescer em zonas de vento
+                gameState.windZones.forEach(zone => {
+                    const dx = this.x - zone.x;
+                    const dy = this.y - zone.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < zone.size) {
+                        this.size = Math.min(this.maxSize, this.size + 0.05);
+                    }
+                });
 
                 this.rotation += 0.1;
 
@@ -274,6 +348,13 @@
                 });
             }
 
+            isCollidingWithBuilding(building) {
+                return this.x < building.x + building.width &&
+                       this.x + this.size > building.x &&
+                       this.y < building.y + building.height &&
+                       this.y + this.size > building.y;
+            }
+
             draw() {
                 // Desenhar centro
                 ctx.fillStyle = '#ff2222';
@@ -283,6 +364,11 @@
 
                 // Desenhar partículas
                 this.particles.forEach(particle => particle.draw());
+            }
+
+            canPlayerAbsorb(player) {
+                // Só pode absorver se o player for maior
+                return player.size > this.size * 1.2;
             }
         }
 
@@ -527,6 +613,96 @@
             }
         }
 
+        // Classe para habitantes (pontinhos que fogem)
+        class Inhabitant {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.size = 2;
+                this.speed = 2 + Math.random() * 2;
+                this.panicRadius = 80;
+                this.life = 5; // Segundos de vida
+                this.color = '#000000';
+            }
+
+            update() {
+                // Fugir do jogador
+                let nearestThreat = null;
+                let nearestDistance = Infinity;
+
+                // Verificar jogador
+                const playerDist = Math.sqrt((this.x - gameState.player.x) ** 2 + (this.y - gameState.player.y) ** 2);
+                if (playerDist < this.panicRadius && playerDist < nearestDistance) {
+                    nearestThreat = gameState.player;
+                    nearestDistance = playerDist;
+                }
+
+                // Verificar inimigos
+                gameState.enemies.forEach(enemy => {
+                    const dist = Math.sqrt((this.x - enemy.x) ** 2 + (this.y - enemy.y) ** 2);
+                    if (dist < this.panicRadius && dist < nearestDistance) {
+                        nearestThreat = enemy;
+                        nearestDistance = dist;
+                    }
+                });
+
+                // Verificar furacões pequenos
+                gameState.smallHurricanes.forEach(hurricane => {
+                    const dist = Math.sqrt((this.x - hurricane.x) ** 2 + (this.y - hurricane.y) ** 2);
+                    if (dist < this.panicRadius && dist < nearestDistance) {
+                        nearestThreat = hurricane;
+                        nearestDistance = dist;
+                    }
+                });
+
+                if (nearestThreat) {
+                    // Fugir da ameaça mais próxima
+                    const dx = this.x - nearestThreat.x;
+                    const dy = this.y - nearestThreat.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance > 0) {
+                        this.vx += (dx / distance) * this.speed * 0.5;
+                        this.vy += (dy / distance) * this.speed * 0.5;
+                    }
+                }
+
+                // Aplicar atrito
+                this.vx *= 0.8;
+                this.vy *= 0.8;
+
+                // Limitar velocidade
+                const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                if (speed > this.speed) {
+                    this.vx = (this.vx / speed) * this.speed;
+                    this.vy = (this.vy / speed) * this.speed;
+                }
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Manter dentro dos limites do mapa
+                this.x = Math.max(0, Math.min(gameState.mapSize, this.x));
+                this.y = Math.max(0, Math.min(gameState.mapSize, this.y));
+
+                // Diminuir vida
+                this.life -= 1/60;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x - gameState.camera.x, this.y - gameState.camera.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            isDead() {
+                return this.life <= 0;
+            }
+        }
+
         // Inicializar jogo
         function initGame() {
             gameState.player.x = 1000;
@@ -539,6 +715,7 @@
             gameState.smallHurricanes = [];
             gameState.windZones = [];
             gameState.buildings = [];
+            gameState.inhabitants = [];
             gameState.gameTime = 0;
             gameState.gameRunning = true;
             gameState.score = 0;
@@ -763,28 +940,86 @@
                 }
             });
 
-            // Atualizar furacões pequenos
+            // Atualizar furacões pequenos e absorção por tamanho
             gameState.smallHurricanes.forEach((hurricane, index) => {
                 hurricane.update();
                 
-                // Verificar absorção durante dash
-                if (isDashing && hurricane.canPlayerAbsorb(player)) {
-                    // Absorver furacão pequeno
-                    player.energy += 15;
-                    player.size += 1; // Crescer ligeiramente
-                    gameState.score += 5;
-                    gameState.smallHurricanes.splice(index, 1);
+                // Verificar absorção durante dash (baseada no tamanho)
+                if (isDashing && player.size > hurricane.size * 1.2) {
+                    const dx = player.x - hurricane.x;
+                    const dy = player.y - hurricane.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
                     
-                    // Adicionar partículas extras
-                    for (let i = 0; i < 3; i++) {
-                        player.particles.push(new Particle(
-                            player.x, player.y, 
-                            Math.random() * player.size, 
-                            0.05 + Math.random() * 0.1, '#4488ff'
-                        ));
+                    if (distance < (player.size + hurricane.size) * 0.8) {
+                        // Absorver furacão
+                        const energyGain = Math.floor(hurricane.size / 2) + 10;
+                        const sizeGain = hurricane.size / 15;
+                        
+                        player.energy += energyGain;
+                        player.size = Math.min(player.maxSize, player.size + sizeGain);
+                        gameState.score += Math.floor(hurricane.size);
+                        gameState.smallHurricanes.splice(index, 1);
+                        
+                        // Adicionar partículas extras baseadas no tamanho absorvido
+                        const particlesToAdd = Math.floor(hurricane.size / 5);
+                        for (let i = 0; i < particlesToAdd; i++) {
+                            player.particles.push(new Particle(
+                                player.x, player.y, 
+                                Math.random() * player.size, 
+                                0.05 + Math.random() * 0.1, '#4488ff'
+                            ));
+                        }
                     }
                 }
             });
+
+            // Absorção de furacões inimigos menores
+            gameState.enemies.forEach((enemy, index) => {
+                enemy.update();
+                
+                // Verificar se player pode absorver este inimigo (baseado no tamanho)
+                if (isDashing && enemy.canPlayerAbsorb(player)) {
+                    const dx = player.x - enemy.x;
+                    const dy = player.y - enemy.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < (player.size + enemy.size) * 0.7) {
+                        // Absorver furacão inimigo - muito mais recompensador!
+                        const energyGain = Math.floor(enemy.size / 1.5) + 25;
+                        const sizeGain = enemy.size / 8;
+                        
+                        player.energy += energyGain;
+                        player.size = Math.min(player.maxSize, player.size + sizeGain);
+                        gameState.score += enemy.size * 2; // Dobro de pontos por absorver inimigo
+                        gameState.enemies.splice(index, 1);
+                        
+                        // Adicionar muitas partículas extras
+                        const particlesToAdd = Math.floor(enemy.size / 3);
+                        for (let i = 0; i < particlesToAdd; i++) {
+                            player.particles.push(new Particle(
+                                player.x, player.y, 
+                                Math.random() * player.size, 
+                                0.05 + Math.random() * 0.1, '#4488ff'
+                            ));
+                        }
+                    }
+                }
+                
+                // Verificar colisão com jogador (se não foi absorvido)
+                if (gameState.enemies.includes(enemy)) {
+                    const dx = enemy.x - player.x;
+                    const dy = enemy.y - player.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < (enemy.size + player.size) * 0.7) {
+                        player.energy -= 3;
+                    }
+                }
+            });
+
+            // Atualizar habitantes e remover os mortos
+            gameState.inhabitants.forEach(inhabitant => inhabitant.update());
+            gameState.inhabitants = gameState.inhabitants.filter(inhabitant => !inhabitant.isDead());
 
             // Criar novos furacões pequenos nas zonas de vento
             if (Math.random() < 0.005) {
@@ -798,13 +1033,46 @@
                 }
             }
 
-            // Destruir prédios
+            // Fazer habitantes fugirem quando player se aproxima
+            gameState.buildings.forEach(building => {
+                if (!building.destroyed) {
+                    const distance = Math.sqrt((player.x - building.x) ** 2 + (player.y - building.y) ** 2);
+                    
+                    // Habitantes saem correndo quando furacão se aproxima
+                    if (distance < 100 && Math.random() < 0.05) {
+                        const numInhabitants = Math.floor(Math.random() * 3) + 1;
+                        for (let i = 0; i < numInhabitants; i++) {
+                            const angle = Math.random() * Math.PI * 2;
+                            const spawnDistance = 20 + Math.random() * 30;
+                            const x = building.x + Math.cos(angle) * spawnDistance;
+                            const y = building.y + Math.sin(angle) * spawnDistance;
+                            gameState.inhabitants.push(new Inhabitant(x, y));
+                        }
+                    }
+                }
+            });
+
+            // Destruir prédios e crescer
             gameState.buildings.forEach(building => {
                 if (!building.destroyed && building.isPlayerColliding(player)) {
                     const damage = speed * 2; // Dano baseado na velocidade
                     const points = building.takeDamage(damage);
                     if (points > 0) {
-                        player.energy += 5; // Ganhar energia destruindo prédios
+                        // Ganhar energia e crescer destruindo prédios
+                        player.energy += 5;
+                        const growthAmount = building.type === 'house' ? 0.5 : building.type === 'skyscraper' ? 2 : 1;
+                        player.size = Math.min(player.maxSize, player.size + growthAmount);
+                        
+                        // Adicionar partículas extras ao crescer
+                        if (player.particles.length < player.size * 0.8) {
+                            for (let i = 0; i < Math.floor(growthAmount); i++) {
+                                player.particles.push(new Particle(
+                                    player.x, player.y, 
+                                    Math.random() * player.size, 
+                                    0.05 + Math.random() * 0.1, '#4488ff'
+                                ));
+                            }
+                        }
                     }
                 }
             });
@@ -894,6 +1162,18 @@
                 if (screenX > -hurricane.size && screenX < canvas.width + hurricane.size &&
                     screenY > -hurricane.size && screenY < canvas.height + hurricane.size) {
                     hurricane.draw();
+                }
+            });
+
+            // Desenhar habitantes (pontinhos que fogem)
+            gameState.inhabitants.forEach(inhabitant => {
+                const screenX = inhabitant.x - gameState.camera.x;
+                const screenY = inhabitant.y - gameState.camera.y;
+                
+                // Só desenhar se estiver na tela
+                if (screenX > -10 && screenX < canvas.width + 10 &&
+                    screenY > -10 && screenY < canvas.height + 10) {
+                    inhabitant.draw();
                 }
             });
 
