@@ -850,6 +850,9 @@
             touchDirection.y = 0;
         });
 
+        // timer para las casitas respawanarem em tese. 
+        let houseSpawnTimer = 0;
+        
         // Função de atualização
         function update() {
             if (!gameState.gameRunning) return;
@@ -915,6 +918,27 @@
                 player.rotation += speed * 0.1;
             }
 
+            //Com sorte o sistema de Spawn das casas randomicamente enquanto o jogo roda.
+            houseSpawnTimer += 1/60;
+            if (houseSpawnTimer > 10) { // a cada 10 segundos
+                let x, y;
+                let valid = false;
+                let tries = 0;
+                while (!valid && tries < 20) {
+                    x = Math.random() * gameState.mapSize;
+                    y = Math.random() * gameState.mapSize;
+                    valid = true;
+                    // Não spawnar perto das cidades principais
+                    [{x:400,y:400},{x:1200,y:300},{x:800,y:1400},{x:1600,y:800}].forEach(city => {
+                        if (Math.sqrt((x-city.x)**2 + (y-city.y)**2) < 250) valid = false;
+                    });
+                    tries++;
+                }
+                if (valid) gameState.buildings.push(new Building(x, y, 'house'));
+                houseSpawnTimer = 0;
+            }
+
+            
             // Sistema de energia
             player.energy -= 0.08; // Perda constante
 
