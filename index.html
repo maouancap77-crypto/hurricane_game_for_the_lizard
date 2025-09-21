@@ -228,7 +228,7 @@
             }
 
             update() {
-                // IA inteligente - escolher entre caçar player ou destruir prédios
+                // IA inteligente - escolher entre caçar player ou destruir prédios, talvez comer um calango assado.
                 if (Math.random() < 0.02) {
                     const playerDistance = Math.sqrt((this.x - gameState.player.x) ** 2 + (this.y - gameState.player.y) ** 2);
                     
@@ -261,7 +261,7 @@
                     }
                 }
 
-                // Comportamento baseado no estado
+                // Comportamento baseado no estado/state machine
                 if (this.targetPlayer) {
                     const dx = gameState.player.x - this.x;
                     const dy = gameState.player.y - this.y;
@@ -301,7 +301,7 @@
                 this.x += this.vx;
                 this.y += this.vy;
 
-                // Manter dentro dos limites do mapa
+                // Manter dentro dos limites do mapa. Colocar uma margem caro calango nao é lá muito necessario por essa func
                 this.x = Math.max(this.size, Math.min(gameState.mapSize - this.size, this.x));
                 this.y = Math.max(this.size, Math.min(gameState.mapSize - this.size, this.y));
 
@@ -509,7 +509,7 @@
             }
         }
 
-        // Classe para furacões pequenos
+        // Classe para furacões pequenos. Igual ao bingulin.... de alguém.
         class SmallHurricane {
             constructor(x, y) {
                 this.x = x;
