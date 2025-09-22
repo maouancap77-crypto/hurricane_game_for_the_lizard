@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Sonho de Furacão: Sobrevivência no Texas a la Calango</title>
+    <title>Sonho de Furacão: Sobrevivência no Texas a la Calango</title>
     <style>
         body {
             margin: 0;
@@ -13,7 +13,6 @@
             overflow: hidden;
             user-select: none;
         }
-
         #startScreen {
             position: absolute;
             top: 0;
@@ -29,13 +28,11 @@
             text-shadow: 2px 2px 8px black;
             z-index: 1000;
         }
-
         #startScreen h1 {
             font-size: 4em;
             margin-bottom: 40px;
             animation: pulse 2s infinite;
         }
-
         #playButton {
             background: #ff2222;
             border: none;
@@ -48,29 +45,24 @@
             box-shadow: 0px 0px 15px #ff0000;
             transition: 0.3s;
         }
-
         #playButton:hover {
             background: #ff4444;
             transform: scale(1.05);
             box-shadow: 0px 0px 25px #ff1111;
         }
-
         @keyframes pulse {
             0% { text-shadow: 2px 2px 8px black; }
             50% { text-shadow: 0px 0px 20px #ff0000; }
             100% { text-shadow: 2px 2px 8px black; }
         }
-
         canvas {
-            display: none; /* esconde o canvas até o jogo começar */
+            display: none;
         }
-
         #gameContainer {
             position: relative;
             width: 100vw;
             height: 100vh;
         }
-
         #ui {
             position: absolute;
             top: 20px;
@@ -79,7 +71,6 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
             z-index: 10;
         }
-
         #energy-bar {
             width: 200px;
             height: 20px;
@@ -89,13 +80,11 @@
             overflow: hidden;
             margin-top: 10px;
         }
-
         #energy-fill {
             height: 100%;
             background: linear-gradient(90deg, #ff4444, #ffaa44, #44ff44);
             transition: width 0.3s ease;
         }
-
         #instructions {
             position: absolute;
             bottom: 20px;
@@ -105,7 +94,6 @@
             font-size: 14px;
             z-index: 10;
         }
-
         #game-over {
             position: absolute;
             top: 50%;
@@ -119,7 +107,6 @@
             display: none;
             z-index: 20;
         }
-
         .restart-btn {
             background: #5D5CDE;
             color: white;
@@ -130,37 +117,24 @@
             margin-top: 15px;
             font-size: 16px;
         }
-
         .restart-btn:hover {
             background: #4a49c7;
         }
-
         @media (max-width: 768px) {
-            #ui {
-                font-size: 14px;
-            }
-            
-            #instructions {
-                font-size: 12px;
-            }
-            #startScreen h1 {
-                font-size: 2em;
-            }
-            #playButton {
-                padding: 10px 30px;
-                font-size: 1em;
-            }
+            #ui { font-size: 14px; }
+            #instructions { font-size: 12px; }
+            #startScreen h1 { font-size: 2em; }
+            #playButton { padding: 10px 30px; font-size: 1em; }
         }
     </style>
 </head>
 <body>
     <div id="startScreen">
-      <h1>🌪️ Fúria Vermelha 🌪️</h1>
-      <button id="playButton">Jogar</button>
+        <h1>🌪️ Fúria Vermelha 🌪️</h1>
+        <button id="playButton">Jogar</button>
     </div>
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
-        
         <div id="ui">
             <div>Energia: <span id="energy-text">100</span>%</div>
             <div id="energy-bar">
@@ -170,7 +144,6 @@
             <div>Pontuação: <span id="score-text">0</span></div>
             <div>Tempo: <span id="time-text">0</span>s</div>
         </div>
-
         <div id="instructions">
             <div><strong>Controles:</strong></div>
             <div>WASD ou Setas - Movimento</div>
@@ -181,7 +154,6 @@
             <div>🟢 Zonas verdes = Recarregam energia e fazem furacões nascerem</div>
             <div>🔴 Furacões vermelhos = FUJA! São maiores que você</div>
         </div>
-
         <div id="game-over">
             <h2>Fim de Jogo!</h2>
             <p>Seu furacão se dissipou...</p>
@@ -189,32 +161,11 @@
             <button class="restart-btn" onclick="restartGame()">Jogar Novamente</button>
         </div>
     </div>
-
     <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
 
-        // Inicializa tela inicial
-        document.getElementById("playButton").addEventListener("click", () => {
-            document.getElementById("startScreen").style.display = "none";
-            canvas.style.display = "block";
-            startGame();
-        });
-
-        function startGame() {
-            // Aqui você chama a inicialização do jogo
-            // Exemplo: gameLoop();
-            console.log("Jogo iniciado!");
-            // Certifique-se que sua função de inicialização está definida
-            initGame();
-            gameLoop();
-        }
-
-        // Restante do seu JS...
-        // Copie o restante do código do seu jogo aqui.
-        // -- INÍCIO DO CÓDIGO EXISTENTE --
-
-        // Configurar canvas responsivo
+        // Responsivo
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
@@ -222,48 +173,67 @@
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
-        // Estado do jogo
-        let gameState = {
-            player: {
-                x: 1000,
-                y: 1000,
-                vx: 0,
-                vy: 0,
-                rotation: 0,
-                size: 25,
-                maxSize: 150,
-                energy: 100,
-                particles: []
-            },
-            camera: {
-                x: 0,
-                y: 0
-            },
-            enemies: [],
-            smallHurricanes: [],
-            windZones: [],
-            buildings: [],
-            inhabitants: [],
-            cities: [],
-            keys: {},
-            gameTime: 0,
-            gameRunning: true,
-            score: 0,
-            mapSize: 2500
-        };
+        // Estado do jogo (igual ao seu código original)
+        // ... (copie aqui todo o bloco de estado, classes e funções do seu código original! Não alterado.)
 
-        // ... (continue seu código existente aqui, como classes, funções de controle, update, draw, gameLoop, etc.)
+        // --- [código igual ao seu, omitido para espaço] ---
 
-        // Exemplo de loop do jogo:
+        // Função de renderização principal
+        function render() {
+            // Limpar canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Desenhar fundo do mapa
+            ctx.fillStyle = '#90EE90';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Margem do mapa jogável
+            ctx.save();
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 5;
+            ctx.strokeRect(
+                -gameState.camera.x,
+                -gameState.camera.y,
+                gameState.mapSize,
+                gameState.mapSize
+            );
+            ctx.restore();
+
+            // Resto igual ao seu render...
+            // Prédios, zonas de vento, furacões pequenos, habitantes, inimigos, jogador, mini-mapa, efeito de energia baixa
+            // --- [copie o resto do render aqui] ---
+        }
+
+        // Loop principal do jogo
         function gameLoop() {
-            // update();
-            // draw();
+            update();
+            render();
             if (gameState.gameRunning) {
                 requestAnimationFrame(gameLoop);
             }
         }
 
-        // -- FIM DO CÓDIGO EXISTENTE --
+        // Função para reiniciar o jogo
+        function restartGame() {
+            initGame();
+            gameState.gameRunning = true;
+            document.getElementById('game-over').style.display = 'none';
+            gameLoop();
+        }
+
+        // Inicialização da tela inicial
+        document.getElementById("playButton").addEventListener("click", () => {
+            document.getElementById("startScreen").style.display = "none";
+            canvas.style.display = "block";
+            initGame();
+            gameState.gameRunning = true;
+            gameLoop();
+        });
+
+        // Inicializa o jogo ao abrir a página, mas NÃO começa o loop até clicar em jogar
+        initGame();
+
+        // O loop começa SOMENTE ao clicar em "Jogar"
     </script>
 </body>
 </html>
