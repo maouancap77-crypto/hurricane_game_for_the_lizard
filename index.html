@@ -3,66 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonho de Furacão: Sobrevivência no Texas a la Calango</title>
+    <title> Sonho de Furacão: Sobrevivência no Texas a la Calango</title>
     <style>
         body {
             margin: 0;
             padding: 0;
-            background: linear-gradient(180deg, #0a0a0a, #440000);
-            font-family: 'Trebuchet MS', 'Arial', sans-serif;
+            background: linear-gradient(to bottom, #87CEEB 0%, #98FB98 100%);
+            font-family: 'Arial', sans-serif;
             overflow: hidden;
             user-select: none;
         }
-        #startScreen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: radial-gradient(circle at center, #220000, #000000);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: #ff4444;
-            text-shadow: 2px 2px 8px black;
-            z-index: 1000;
-        }
-        #startScreen h1 {
-            font-size: 4em;
-            margin-bottom: 40px;
-            animation: pulse 2s infinite;
-        }
-        #playButton {
-            background: #ff2222;
-            border: none;
-            padding: 20px 60px;
-            font-size: 1.5em;
-            font-weight: bold;
-            color: white;
-            border-radius: 10px;
-            cursor: pointer;
-            box-shadow: 0px 0px 15px #ff0000;
-            transition: 0.3s;
-        }
-        #playButton:hover {
-            background: #ff4444;
-            transform: scale(1.05);
-            box-shadow: 0px 0px 25px #ff1111;
-        }
-        @keyframes pulse {
-            0% { text-shadow: 2px 2px 8px black; }
-            50% { text-shadow: 0px 0px 20px #ff0000; }
-            100% { text-shadow: 2px 2px 8px black; }
-        }
-        canvas {
-            display: none;
-        }
+
         #gameContainer {
             position: relative;
             width: 100vw;
             height: 100vh;
         }
+
+        #gameCanvas {
+            display: block;
+            background: linear-gradient(45deg, #87CEEB 0%, #90EE90 50%, #F0E68C 100%);
+        }
+
         #ui {
             position: absolute;
             top: 20px;
@@ -71,6 +33,7 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
             z-index: 10;
         }
+
         #energy-bar {
             width: 200px;
             height: 20px;
@@ -80,11 +43,13 @@
             overflow: hidden;
             margin-top: 10px;
         }
+
         #energy-fill {
             height: 100%;
             background: linear-gradient(90deg, #ff4444, #ffaa44, #44ff44);
             transition: width 0.3s ease;
         }
+
         #instructions {
             position: absolute;
             bottom: 20px;
@@ -94,6 +59,7 @@
             font-size: 14px;
             z-index: 10;
         }
+
         #game-over {
             position: absolute;
             top: 50%;
@@ -107,6 +73,7 @@
             display: none;
             z-index: 20;
         }
+
         .restart-btn {
             background: #5D5CDE;
             color: white;
@@ -117,24 +84,26 @@
             margin-top: 15px;
             font-size: 16px;
         }
+
         .restart-btn:hover {
             background: #4a49c7;
         }
+
         @media (max-width: 768px) {
-            #ui { font-size: 14px; }
-            #instructions { font-size: 12px; }
-            #startScreen h1 { font-size: 2em; }
-            #playButton { padding: 10px 30px; font-size: 1em; }
+            #ui {
+                font-size: 14px;
+            }
+            
+            #instructions {
+                font-size: 12px;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="startScreen">
-        <h1>🌪️ Fúria Vermelha 🌪️</h1>
-        <button id="playButton">Jogar</button>
-    </div>
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
+        
         <div id="ui">
             <div>Energia: <span id="energy-text">100</span>%</div>
             <div id="energy-bar">
@@ -144,6 +113,7 @@
             <div>Pontuação: <span id="score-text">0</span></div>
             <div>Tempo: <span id="time-text">0</span>s</div>
         </div>
+
         <div id="instructions">
             <div><strong>Controles:</strong></div>
             <div>WASD ou Setas - Movimento</div>
@@ -154,6 +124,7 @@
             <div>🟢 Zonas verdes = Recarregam energia e fazem furacões nascerem</div>
             <div>🔴 Furacões vermelhos = FUJA! São maiores que você</div>
         </div>
+
         <div id="game-over">
             <h2>Fim de Jogo!</h2>
             <p>Seu furacão se dissipou...</p>
@@ -161,11 +132,12 @@
             <button class="restart-btn" onclick="restartGame()">Jogar Novamente</button>
         </div>
     </div>
+
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Responsivo
+        // Configurar canvas responsivo
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
@@ -173,21 +145,1105 @@
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
-        // Estado do jogo (igual ao seu código original)
-        // ... (copie aqui todo o bloco de estado, classes e funções do seu código original! Não alterado.)
+        // Estado do jogo
+        let gameState = {
+            player: {
+                x: 1000,
+                y: 1000,
+                vx: 0,
+                vy: 0,
+                rotation: 0,
+                size: 25,
+                maxSize: 150,
+                energy: 100,
+                particles: []
+            },
+            camera: {
+                x: 0,
+                y: 0
+            },
+            enemies: [],
+            smallHurricanes: [],
+            windZones: [],
+            buildings: [],
+            inhabitants: [],
+            cities: [],
+            keys: {},
+            gameTime: 0,
+            gameRunning: true,
+            score: 0,
+            mapSize: 2500
+        };
 
-        // --- [código igual ao seu, omitido para espaço] ---
+        // Classe para partículas do furacão
+        class Particle {
+            constructor(x, y, distance, speed, color) {
+                this.angle = Math.random() * Math.PI * 2;
+                this.distance = distance;
+                this.speed = speed;
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.life = 1;
+            }
 
-        // Função de renderização principal
-        function render() {
+            update(centerX, centerY, rotation) {
+                this.angle += this.speed + rotation * 0.1;
+                this.x = centerX + Math.cos(this.angle) * this.distance;
+                this.y = centerY + Math.sin(this.angle) * this.distance;
+                this.life -= 0.02;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // Classe para furacões inimigos
+        class Enemy {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.size = 40 + Math.random() * 30;
+                this.maxSize = 200;
+                this.rotation = 0;
+                this.particles = [];
+                
+                // Estados possíveis: "fugindo", "caçando crescimento", "perseguindo player"
+                this.state = "caçando crescimento"; 
+                this.target = null;
+        
+                // Criar partículas
+                for (let i = 0; i < 20; i++) {
+                    this.particles.push(new Particle(x, y, Math.random() * this.size, 
+                                                   0.1 + Math.random() * 0.1, '#ff4444'));
+                }
+            }
+        
+            update() {
+                const player = gameState.player;
+                const dxPlayer = player.x - this.x;
+                const dyPlayer = player.y - this.y;
+                const distPlayer = Math.sqrt(dxPlayer * dxPlayer + dyPlayer * dyPlayer);
+        
+                // --- DECISÃO DE ESTADO ---
+                if (player.size > this.size * 1.2) {
+                    this.state = "fugindo";
+                    this.target = null;
+                } else {
+                    // Checar furacões menores próximos
+                    let smallerEnemyNearby = null;
+                    let nearestDist = Infinity;
+                    gameState.enemies.forEach(enemy => {
+                        if (enemy !== this && enemy.size < this.size * 0.8) {
+                            const dx = enemy.x - this.x;
+                            const dy = enemy.y - this.y;
+                            const d = Math.sqrt(dx * dx + dy * dy);
+                            if (d < nearestDist && d < 300) { // só caça se estiver próximo
+                                nearestDist = d;
+                                smallerEnemyNearby = enemy;
+                            }
+                        }
+                    });
+        
+                    if (smallerEnemyNearby) {
+                        this.state = "caçando crescimento";
+                        this.target = smallerEnemyNearby;
+                    } else if (this.size > player.size * 0.8) {
+                        // Só persegue o player se for maior
+                        this.state = "perseguindo player";
+                        this.target = player;
+                    } else {
+                        // Caso contrário: buscar zona de vento
+                        let nearestZone = null;
+                        let zoneDist = Infinity;
+                        gameState.windZones.forEach(zone => {
+                            const dx = zone.x - this.x;
+                            const dy = zone.y - this.y;
+                            const d = Math.sqrt(dx * dx + dy * dy);
+                            if (d < zoneDist) {
+                                zoneDist = d;
+                                nearestZone = zone;
+                            }
+                        });
+                        if (nearestZone) {
+                            this.state = "caçando crescimento";
+                            this.target = nearestZone;
+                        }
+                    }
+                }
+        
+                // --- EXECUÇÃO DO COMPORTAMENTO ---
+                switch (this.state) {
+                    case "fugindo":
+                        if (distPlayer < 400) {
+                            this.vx -= (dxPlayer / distPlayer) * 0.5;
+                            this.vy -= (dyPlayer / distPlayer) * 0.5;
+                        }
+                        break;
+        
+                    case "perseguindo player":
+                        if (distPlayer > 40) {
+                            this.vx += (dxPlayer / distPlayer) * 0.4;
+                            this.vy += (dyPlayer / distPlayer) * 0.4;
+                        }
+                        break;
+        
+                    case "caçando crescimento":
+                        if (this.target) {
+                            const dx = this.target.x - this.x;
+                            const dy = this.target.y - this.y;
+                            const d = Math.sqrt(dx * dx + dy * dy);
+                            if (d > 20) {
+                                this.vx += (dx / d) * 0.3;
+                                this.vy += (dy / d) * 0.3;
+                            }
+                        }
+                        break;
+                }
+        
+                // Movimento aleatório
+                this.vx += (Math.random() - 0.5) * 0.2;
+                this.vy += (Math.random() - 0.5) * 0.2;
+        
+                // Atrito
+                this.vx *= 0.98;
+                this.vy *= 0.98;
+        
+                // Limitar velocidade
+                const maxSpeed = Math.max(1.5, 3 - (this.size / 50));
+                const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                if (speed > maxSpeed) {
+                    this.vx = (this.vx / speed) * maxSpeed;
+                    this.vy = (this.vy / speed) * maxSpeed;
+                }
+        
+                // Atualizar posição
+                this.x += this.vx;
+                this.y += this.vy;
+        
+                // Limites do mapa
+                this.x = Math.max(this.size, Math.min(gameState.mapSize - this.size, this.x));
+                this.y = Math.max(this.size, Math.min(gameState.mapSize - this.size, this.y));
+        
+                // Crescimento em zonas de vento
+                gameState.windZones.forEach(zone => {
+                    const dx = this.x - zone.x;
+                    const dy = this.y - zone.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < zone.size) {
+                        this.size = Math.min(this.maxSize, this.size + 0.05);
+                    }
+                });
+        
+                // Crescimento ao destruir prédios
+                gameState.buildings.forEach(building => {
+                    if (!building.destroyed && this.isCollidingWithBuilding(building)) {
+                        const damage = speed * 3;
+                        const points = building.takeDamage(damage);
+                        if (points > 0) {
+                            this.size = Math.min(this.maxSize, this.size + 2);
+        
+                            if (this.particles.length < this.size * 0.8) {
+                                for (let i = 0; i < 2; i++) {
+                                    this.particles.push(new Particle(this.x, this.y, Math.random() * this.size, 
+                                                                   0.1 + Math.random() * 0.1, '#ff4444'));
+                                }
+                            }
+                        }
+                    }
+                });
+        
+                this.rotation += 0.1;
+        
+                // Atualizar partículas
+                this.particles.forEach(particle => {
+                    particle.update(this.x, this.y, this.rotation);
+                    if (particle.life <= 0) {
+                        particle.life = 1;
+                        particle.distance = Math.random() * this.size;
+                        particle.angle = Math.random() * Math.PI * 2;
+                    }
+                });
+            }
+        
+            isCollidingWithBuilding(building) {
+                return this.x < building.x + building.width &&
+                       this.x + this.size > building.x &&
+                       this.y < building.y + building.height &&
+                       this.y + this.size > building.y;
+            }
+        
+            draw() {
+                ctx.fillStyle = '#ff2222';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+        
+                this.particles.forEach(particle => particle.draw());
+            }
+        
+            canPlayerAbsorb(player) {
+                return player.size > this.size * 1.2;
+            }
+        }
+
+
+        // Classe para zonas de vento
+        class WindZone {
+            constructor(x, y, size) {
+                this.x = x;
+                this.y = y;
+                this.size = size;
+                this.pulsePhase = Math.random() * Math.PI * 2;
+            }
+
+            update() {
+                this.pulsePhase += 0.1;
+            }
+
+            draw() {
+                const pulse = 0.8 + Math.sin(this.pulsePhase) * 0.2;
+                ctx.save();
+                ctx.globalAlpha = 0.3 * pulse;
+                ctx.fillStyle = '#44ff44';
+                ctx.beginPath();
+                ctx.arc(this.x - gameState.camera.x, this.y - gameState.camera.y, this.size * pulse, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                // Desenhar linhas de vento
+                ctx.strokeStyle = '#66ff66';
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = 0.5;
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2 + this.pulsePhase;
+                    const x1 = this.x - gameState.camera.x + Math.cos(angle) * this.size * 0.5;
+                    const y1 = this.y - gameState.camera.y + Math.sin(angle) * this.size * 0.5;
+                    const x2 = this.x - gameState.camera.x + Math.cos(angle) * this.size * 0.8;
+                    const y2 = this.y - gameState.camera.y + Math.sin(angle) * this.size * 0.8;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                }
+                ctx.globalAlpha = 1;
+            }
+
+            isPlayerInside(player) {
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                return Math.sqrt(dx * dx + dy * dy) < this.size;
+            }
+        }
+
+        // Classe para construções
+        class Building {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type; // 'house', 'skyscraper', 'factory'
+                this.destroyed = false;
+                this.health = type === 'house' ? 50 : type === 'skyscraper' ? 150 : 100;
+                this.maxHealth = this.health;
+                this.width = type === 'house' ? 30 : type === 'skyscraper' ? 20 : 40;
+                this.height = type === 'house' ? 25 : type === 'skyscraper' ? 60 : 35;
+                this.color = type === 'house' ? '#8B4513' : type === 'skyscraper' ? '#696969' : '#FF4500';
+            }
+
+            takeDamage(damage) {
+                if (!this.destroyed) {
+                    this.health -= damage;
+                    if (this.health <= 0) {
+                        this.destroyed = true;
+                        const points = this.type === 'house' ? 10 : this.type === 'skyscraper' ? 50 : 25;
+                        gameState.score += points;
+                        return points;
+                    }
+                }
+                return 0;
+            }
+
+            draw() {
+                if (this.destroyed) return;
+
+                const screenX = this.x - gameState.camera.x;
+                const screenY = this.y - gameState.camera.y;
+
+                // Efeito de tremor se sendo danificado
+                const shake = this.health < this.maxHealth * 0.5 ? (Math.random() - 0.5) * 2 : 0;
+
+                ctx.fillStyle = this.color;
+                if (this.type === 'house') {
+                    // Casa simples
+                    ctx.fillRect(screenX + shake, screenY + shake, this.width, this.height);
+                    // Telhado
+                    ctx.fillStyle = '#A0522D';
+                    ctx.beginPath();
+                    ctx.moveTo(screenX + shake, screenY + shake);
+                    ctx.lineTo(screenX + this.width/2 + shake, screenY - 10 + shake);
+                    ctx.lineTo(screenX + this.width + shake, screenY + shake);
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (this.type === 'skyscraper') {
+                    // Arranha-céu
+                    ctx.fillRect(screenX + shake, screenY + shake, this.width, this.height);
+                    // Janelas
+                    ctx.fillStyle = '#FFFF00';
+                    for (let i = 0; i < 3; i++) {
+                        for (let j = 0; j < 8; j++) {
+                            if (Math.random() > 0.3) {
+                                ctx.fillRect(screenX + 3 + i * 5 + shake, screenY + 5 + j * 6 + shake, 3, 3);
+                            }
+                        }
+                    }
+                } else {
+                    // Fábrica
+                    ctx.fillRect(screenX + shake, screenY + shake, this.width, this.height);
+                    // Chaminé
+                    ctx.fillStyle = '#8B0000';
+                    ctx.fillRect(screenX + this.width - 8 + shake, screenY - 15 + shake, 6, 20);
+                }
+
+                // Barra de vida
+                if (this.health < this.maxHealth) {
+                    const barWidth = this.width;
+                    const barHeight = 3;
+                    ctx.fillStyle = '#ff0000';
+                    ctx.fillRect(screenX, screenY - 8, barWidth, barHeight);
+                    ctx.fillStyle = '#00ff00';
+                    ctx.fillRect(screenX, screenY - 8, barWidth * (this.health / this.maxHealth), barHeight);
+                }
+            }
+
+            isPlayerColliding(player) {
+                if (this.destroyed) return false;
+                return player.x < this.x + this.width &&
+                       player.x + player.size > this.x &&
+                       player.y < this.y + this.height &&
+                       player.y + player.size > this.y;
+            }
+        }
+
+        // Classe para furacões pequenos. Igual ao bingulin.... de alguém.
+        class SmallHurricane {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.size = 8 + Math.random() * 5;
+                this.maxSize = 25;
+                this.rotation = 0;
+                this.particles = [];
+                this.growthRate = 0.02;
+                this.canBeAbsorbed = true;
+                
+                // Criar partículas
+                for (let i = 0; i < 8; i++) {
+                    this.particles.push(new Particle(x, y, Math.random() * this.size, 
+                                                   0.08 + Math.random() * 0.05, '#ffaa44'));
+                }
+            }
+
+            update() {
+                // Crescer em zonas de vento
+                gameState.windZones.forEach(zone => {
+                    const dx = this.x - zone.x;
+                    const dy = this.y - zone.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < zone.size) {
+                        this.size = Math.min(this.maxSize, this.size + this.growthRate);
+                        if (this.size > 15) {
+                            this.canBeAbsorbed = false; // Muito grande para ser absorvido
+                        }
+                    }
+                });
+
+                // Movimento aleatório
+                this.vx += (Math.random() - 0.5) * 0.2;
+                this.vy += (Math.random() - 0.5) * 0.2;
+
+                // Aplicar atrito
+                this.vx *= 0.98;
+                this.vy *= 0.98;
+
+                // Limitar velocidade
+                const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                if (speed > 1) {
+                    this.vx = (this.vx / speed) * 1;
+                    this.vy = (this.vy / speed) * 1;
+                }
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Manter dentro dos limites do mapa
+                this.x = Math.max(this.size, Math.min(gameState.mapSize - this.size, this.x));
+                this.y = Math.max(this.size, Math.min(gameState.mapSize - this.size, this.y));
+
+                this.rotation += 0.15;
+
+                // Atualizar partículas
+                this.particles.forEach(particle => {
+                    particle.update(this.x, this.y, this.rotation);
+                    if (particle.life <= 0) {
+                        particle.life = 1;
+                        particle.distance = Math.random() * this.size;
+                        particle.angle = Math.random() * Math.PI * 2;
+                    }
+                });
+
+                // Adicionar mais partículas conforme cresce
+                if (this.particles.length < this.size && Math.random() < 0.1) {
+                    this.particles.push(new Particle(this.x, this.y, Math.random() * this.size, 
+                                                   0.08 + Math.random() * 0.05, '#ffaa44'));
+                }
+            }
+
+            draw() {
+                // Desenhar centro
+                ctx.fillStyle = this.canBeAbsorbed ? '#ffaa00' : '#ff6600';
+                ctx.beginPath();
+                ctx.arc(this.x - gameState.camera.x, this.y - gameState.camera.y, this.size * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Desenhar partículas
+                this.particles.forEach(particle => {
+                    ctx.save();
+                    ctx.globalAlpha = particle.life;
+                    ctx.fillStyle = particle.color;
+                    ctx.beginPath();
+                    ctx.arc(particle.x - gameState.camera.x, particle.y - gameState.camera.y, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                });
+            }
+
+            canPlayerAbsorb(player) {
+                if (!this.canBeAbsorbed) return false;
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                return distance < (player.size + this.size) * 0.8;
+            }
+        }
+
+        // Classe para habitantes (pontinhos que fogem)
+        class Inhabitant {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.size = 2;
+                this.speed = 2 + Math.random() * 2;
+                this.panicRadius = 80;
+                this.life = 5; // Segundos de vida
+                this.color = '#000000';
+            }
+
+            update() {
+                // Fugir do jogador
+                let nearestThreat = null;
+                let nearestDistance = Infinity;
+
+                // Verificar jogador
+                const playerDist = Math.sqrt((this.x - gameState.player.x) ** 2 + (this.y - gameState.player.y) ** 2);
+                if (playerDist < this.panicRadius && playerDist < nearestDistance) {
+                    nearestThreat = gameState.player;
+                    nearestDistance = playerDist;
+                }
+
+                // Verificar inimigos
+                gameState.enemies.forEach(enemy => {
+                    const dist = Math.sqrt((this.x - enemy.x) ** 2 + (this.y - enemy.y) ** 2);
+                    if (dist < this.panicRadius && dist < nearestDistance) {
+                        nearestThreat = enemy;
+                        nearestDistance = dist;
+                    }
+                });
+
+                // Verificar furacões pequenos
+                gameState.smallHurricanes.forEach(hurricane => {
+                    const dist = Math.sqrt((this.x - hurricane.x) ** 2 + (this.y - hurricane.y) ** 2);
+                    if (dist < this.panicRadius && dist < nearestDistance) {
+                        nearestThreat = hurricane;
+                        nearestDistance = dist;
+                    }
+                });
+
+                if (nearestThreat) {
+                    // Fugir da ameaça mais próxima
+                    const dx = this.x - nearestThreat.x;
+                    const dy = this.y - nearestThreat.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance > 0) {
+                        this.vx += (dx / distance) * this.speed * 0.5;
+                        this.vy += (dy / distance) * this.speed * 0.5;
+                    }
+                }
+
+                // Aplicar atrito
+                this.vx *= 0.8;
+                this.vy *= 0.8;
+
+                // Limitar velocidade
+                const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                if (speed > this.speed) {
+                    this.vx = (this.vx / speed) * this.speed;
+                    this.vy = (this.vy / speed) * this.speed;
+                }
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Manter dentro dos limites do mapa
+                this.x = Math.max(0, Math.min(gameState.mapSize, this.x));
+                this.y = Math.max(0, Math.min(gameState.mapSize, this.y));
+
+                // Diminuir vida
+                this.life -= 1/60;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x - gameState.camera.x, this.y - gameState.camera.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            isDead() {
+                return this.life <= 0;
+            }
+        }
+
+        // Inicializar jogo
+        function initGame() {
+            gameState.player.x = 1000;
+            gameState.player.y = 1000;
+            gameState.player.vx = 0;
+            gameState.player.vy = 0;
+            gameState.player.energy = 100;
+            gameState.player.particles = [];
+            gameState.enemies = [];
+            gameState.smallHurricanes = [];
+            gameState.windZones = [];
+            gameState.buildings = [];
+            gameState.inhabitants = [];
+            gameState.gameTime = 0;
+            gameState.gameRunning = true;
+            gameState.score = 0;
+
+            // Criar partículas do jogador
+            for (let i = 0; i < 15; i++) {
+                gameState.player.particles.push(new Particle(
+                    gameState.player.x, gameState.player.y, 
+                    Math.random() * gameState.player.size, 
+                    0.05 + Math.random() * 0.1, '#4488ff'
+                ));
+            }
+
+            // Criar cidades com prédios
+            const cityPositions = [
+                { x: 400, y: 400 },
+                { x: 1200, y: 300 },
+                { x: 800, y: 1400 },
+                { x: 1600, y: 800 }
+            ];
+
+            cityPositions.forEach(city => {
+                // Centro da cidade - arranha-céus
+                for (let i = 0; i < 8; i++) {
+                    const x = city.x + (Math.random() - 0.5) * 150;
+                    const y = city.y + (Math.random() - 0.5) * 150;
+                    gameState.buildings.push(new Building(x, y, 'skyscraper'));
+                }
+
+                // Periferia da cidade - casas e fábricas
+                for (let i = 0; i < 15; i++) {
+                    const angle = (i / 15) * Math.PI * 2;
+                    const distance = 200 + Math.random() * 100;
+                    const x = city.x + Math.cos(angle) * distance;
+                    const y = city.y + Math.sin(angle) * distance;
+                    const type = Math.random() < 0.8 ? 'house' : 'factory';
+                    gameState.buildings.push(new Building(x, y, type));
+                }
+            });
+
+            // Casas rurais espalhadas
+            for (let i = 0; i < 30; i++) {
+                let x, y;
+                let validPosition = false;
+                let attempts = 0;
+                
+                while (!validPosition && attempts < 50) {
+                    x = Math.random() * gameState.mapSize;
+                    y = Math.random() * gameState.mapSize;
+                    
+                    // Verificar se não está muito perto de cidades
+                    validPosition = true;
+                    for (let city of cityPositions) {
+                        if (Math.sqrt((x - city.x) ** 2 + (y - city.y) ** 2) < 300) {
+                            validPosition = false;
+                            break;
+                        }
+                    }
+                    attempts++;
+                }
+                
+                if (validPosition) {
+                    gameState.buildings.push(new Building(x, y, 'house'));
+                }
+            }
+
+            // Criar inimigos (furacões grandes)
+            for (let i = 0; i < 4; i++) {
+                let x, y;
+                do {
+                    x = Math.random() * gameState.mapSize;
+                    y = Math.random() * gameState.mapSize;
+                } while (Math.sqrt((x - gameState.player.x) ** 2 + (y - gameState.player.y) ** 2) < 300);
+                
+                gameState.enemies.push(new Enemy(x, y));
+            }
+
+            // Criar zonas de vento
+            for (let i = 0; i < 12; i++) {
+                gameState.windZones.push(new WindZone(
+                    Math.random() * gameState.mapSize,
+                    Math.random() * gameState.mapSize,
+                    50 + Math.random() * 50
+                ));
+            }
+
+            // Criar furacões pequenos iniciais
+            for (let i = 0; i < 6; i++) {
+                gameState.smallHurricanes.push(new SmallHurricane(
+                    Math.random() * gameState.mapSize,
+                    Math.random() * gameState.mapSize
+                ));
+            }
+
+            document.getElementById('game-over').style.display = 'none';
+        }
+
+        // Controles
+        document.addEventListener('keydown', (e) => {
+            gameState.keys[e.key.toLowerCase()] = true;
+            if (e.key === ' ') {
+                e.preventDefault();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            gameState.keys[e.key.toLowerCase()] = false;
+        });
+
+        // Controles touch para mobile
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchDirection = { x: 0, y: 0 };
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            touchDirection.x = (touch.clientX - touchStartX) / 100;
+            touchDirection.y = (touch.clientY - touchStartY) / 100;
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            touchDirection.x = 0;
+            touchDirection.y = 0;
+        });
+
+        // timer para las casitas respawanarem em tese. 
+        let houseSpawnTimer = 0;
+
+        // agora os furacoes podem se comer, UIIIIIIIII delicia! ALTISSIMA PEDERASTIAAAAAAAAAA!
+        function hurricaneCanibalism() {
+            // SmallHurricanes podem ser absorvidos por inimigos
+            gameState.enemies.forEach(enemy => {
+                for (let i = gameState.smallHurricanes.length - 1; i >= 0; i--) {
+                    let small = gameState.smallHurricanes[i];
+                    const dx = enemy.x - small.x;
+                    const dy = enemy.y - small.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (enemy.size > small.size * 1.2 && dist < (enemy.size + small.size) * 0.7 && small.canBeAbsorbed) {
+                        enemy.size = Math.min(enemy.maxSize, enemy.size + small.size / 3); // PATCH: crescimento mais rápido
+                        gameState.smallHurricanes.splice(i, 1);
+                    }
+                }
+            });
+        
+            // Inimigos absorvem outros inimigos menores
+            for (let i = gameState.enemies.length - 1; i >= 0; i--) {
+                let e1 = gameState.enemies[i];
+                for (let j = gameState.enemies.length - 1; j >= 0; j--) {
+                    if (i !== j) {
+                        let e2 = gameState.enemies[j];
+                        const dx = e1.x - e2.x;
+                        const dy = e1.y - e2.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (e1.size > e2.size * 1.18 && dist < (e1.size + e2.size) * 0.7) {
+                            e1.size = Math.min(e1.maxSize, e1.size + e2.size / 7); // PATCH: crescimento acelerado
+                            gameState.enemies.splice(j, 1);
+                            if (j < i) i--;
+                            break;
+                        }
+                    }
+                }
+            }
+        
+            // (Opcional) SmallHurricanes podem absorver outros menores
+            for (let i = gameState.smallHurricanes.length - 1; i >= 0; i--) {
+                let s1 = gameState.smallHurricanes[i];
+                for (let j = gameState.smallHurricanes.length - 1; j >= 0; j--) {
+                    if (i !== j) {
+                        let s2 = gameState.smallHurricanes[j];
+                        const dx = s1.x - s2.x;
+                        const dy = s1.y - s2.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (s1.size > s2.size * 1.2 && dist < (s1.size + s2.size) * 0.6 && s2.canBeAbsorbed) {
+                            s1.size = Math.min(s1.maxSize, s1.size + s2.size / 3);
+                            gameState.smallHurricanes.splice(j, 1);
+                            if (j < i) i--;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+
+        
+        // Função de atualização/Calanguinho isso aqui é o que mantém o jogo rodando ela atualiza, e checa bem como age a cada fps do jogo. 
+        function update() {
+            if (!gameState.gameRunning) return;
+
+            const player = gameState.player;
+            
+            // Movimento do jogador
+            let inputX = 0;
+            let inputY = 0;
+
+            // Teclado
+            if (gameState.keys['w'] || gameState.keys['arrowup']) inputY -= 1;
+            if (gameState.keys['s'] || gameState.keys['arrowdown']) inputY += 1;
+            if (gameState.keys['a'] || gameState.keys['arrowleft']) inputX -= 1;
+            if (gameState.keys['d'] || gameState.keys['arrowright']) inputX += 1;
+
+            // Touch
+            inputX += touchDirection.x;
+            inputY += touchDirection.y;
+
+            //Troca troca dos ventos.
+            hurricaneCanibalism();
+            
+            // Aplicar força rotacional (física de furacão)
+            const force = 0.5;
+            player.vx += inputX * force;
+            player.vy += inputY * force;
+
+            // Dash com capacidade de absorver furacões pequenos
+            let isDashing = false;
+            if (gameState.keys[' '] && player.energy > 20) {
+                const dashForce = 5;
+                player.vx += inputX * dashForce;
+                player.vy += inputY * dashForce;
+                player.energy -= 2;
+                isDashing = true;
+                gameState.keys[' '] = false; // Evitar spam
+            }
+
+            // Aplicar atrito
+            player.vx *= 0.95;
+            player.vy *= 0.95;
+
+            // Limitar velocidade
+            const maxSpeed = 8;
+            const speed = Math.sqrt(player.vx * player.vx + player.vy * player.vy);
+            if (speed > maxSpeed) {
+                player.vx = (player.vx / speed) * maxSpeed;
+                player.vy = (player.vy / speed) * maxSpeed;
+            }
+
+            // Atualizar posição
+            player.x += player.vx;
+            player.y += player.vy;
+
+            // Manter dentro dos limites do mapa
+            player.x = Math.max(player.size, Math.min(gameState.mapSize - player.size, player.x));
+            player.y = Math.max(player.size, Math.min(gameState.mapSize - player.size, player.y));
+
+            // Atualizar câmera
+            gameState.camera.x = player.x - canvas.width / 2;
+            gameState.camera.y = player.y - canvas.height / 2;
+
+            // Rotação baseada na velocidade
+            if (speed > 0.1) {
+                player.rotation += speed * 0.1;
+            }
+
+            //Com sorte o sistema de Spawn das casas randomicamente enquanto o jogo roda.
+            houseSpawnTimer += 1/60;
+            if (houseSpawnTimer > 5) { // a cada 5 segundos, por que 5 é melhor que 10 aaaaaaaaah PURGEEEEEE!
+                let x, y;
+                let valid = false;
+                let tries = 0;
+                while (!valid && tries < 20) {
+                    x = Math.random() * gameState.mapSize;
+                    y = Math.random() * gameState.mapSize;
+                    valid = true;
+                    // Não spawnar perto das cidades principais
+                    [{x:400,y:400},{x:1200,y:300},{x:800,y:1400},{x:1600,y:800}].forEach(city => {
+                        if (Math.sqrt((x-city.x)**2 + (y-city.y)**2) < 250) valid = false;
+                    });
+                    tries++;
+                }
+                if (valid) {
+                    // Sorteia um tipo de edifício
+                    const types = ['house', 'skyscraper', 'factory'];
+                    const type = types[Math.floor(Math.random() * types.length)];
+                    gameState.buildings.push(new Building(x, y, type));
+                }
+                houseSpawnTimer = 0;
+            }
+
+            
+            // Sistema de energia
+            player.energy -= 0.08; // Perda constante
+
+            // Verificar zonas de vento
+            let inWindZone = false;
+            gameState.windZones.forEach(zone => {
+                if (zone.isPlayerInside(player)) {
+                    player.energy += 1.5;
+                    inWindZone = true;
+                }
+                zone.update();
+            });
+
+            player.energy = Math.max(0, Math.min(100, player.energy));
+
+            // Atualizar partículas do jogador
+            player.particles.forEach(particle => {
+                particle.update(player.x, player.y, player.rotation);
+                if (particle.life <= 0) {
+                    particle.life = 1;
+                    particle.distance = Math.random() * player.size;
+                    particle.angle = Math.random() * Math.PI * 2;
+                }
+            });
+
+            // Atualizar furacões pequenos e absorção por tamanho
+            gameState.smallHurricanes.forEach((hurricane, index) => {
+                hurricane.update();
+                
+                // Verificar absorção durante dash (baseada no tamanho)
+                if (isDashing && player.size > hurricane.size * 1.2) {
+                    const dx = player.x - hurricane.x;
+                    const dy = player.y - hurricane.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < (player.size + hurricane.size) * 0.8) {
+                        // Absorver furacão
+                        const energyGain = Math.floor(hurricane.size / 2) + 10;
+                        const sizeGain = hurricane.size / 15;
+                        
+                        player.energy += energyGain;
+                        player.size = Math.min(player.maxSize, player.size + sizeGain);
+                        gameState.score += Math.floor(hurricane.size);
+                        gameState.smallHurricanes.splice(index, 1);
+                        
+                        // Adicionar partículas extras baseadas no tamanho absorvido
+                        const particlesToAdd = Math.floor(hurricane.size / 5);
+                        for (let i = 0; i < particlesToAdd; i++) {
+                            player.particles.push(new Particle(
+                                player.x, player.y, 
+                                Math.random() * player.size, 
+                                0.05 + Math.random() * 0.1, '#4488ff'
+                            ));
+                        }
+                    }
+                }
+            });
+
+            // Absorção de furacões inimigos menores
+            gameState.enemies.forEach((enemy, index) => {
+                enemy.update();
+                
+                // Verificar se player pode absorver este inimigo (baseado no tamanho)
+                if (isDashing && enemy.canPlayerAbsorb(player)) {
+                    const dx = player.x - enemy.x;
+                    const dy = player.y - enemy.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < (player.size + enemy.size) * 0.7) {
+                        // Absorver furacão inimigo - muito mais recompensador!
+                        const energyGain = Math.floor(enemy.size / 1.5) + 25;
+                        const sizeGain = enemy.size / 8;
+                        
+                        player.energy += energyGain;
+                        player.size = Math.min(player.maxSize, player.size + sizeGain);
+                        gameState.score += enemy.size * 2; // Dobro de pontos por absorver inimigo
+                        gameState.enemies.splice(index, 1);
+                        
+                        // Adicionar muitas partículas extras
+                        const particlesToAdd = Math.floor(enemy.size / 3);
+                        for (let i = 0; i < particlesToAdd; i++) {
+                            player.particles.push(new Particle(
+                                player.x, player.y, 
+                                Math.random() * player.size, 
+                                0.05 + Math.random() * 0.1, '#4488ff'
+                            ));
+                        }
+                    }
+                }
+                
+                // Verificar colisão com jogador (se não foi absorvido)
+                if (gameState.enemies.includes(enemy)) {
+                    const dx = enemy.x - player.x;
+                    const dy = enemy.y - player.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < (enemy.size + player.size) * 0.7) {
+                        player.energy -= 3;
+                    }
+                }
+            });
+
+            // Atualizar habitantes e remover os mortos
+            gameState.inhabitants.forEach(inhabitant => inhabitant.update());
+            gameState.inhabitants = gameState.inhabitants.filter(inhabitant => !inhabitant.isDead());
+
+            // Criar novos furacões pequenos nas zonas de vento
+            if (Math.random() < 0.005) {
+                const zone = gameState.windZones[Math.floor(Math.random() * gameState.windZones.length)];
+                if (zone) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = Math.random() * zone.size * 0.8;
+                    const x = zone.x + Math.cos(angle) * distance;
+                    const y = zone.y + Math.sin(angle) * distance;
+                    gameState.smallHurricanes.push(new SmallHurricane(x, y));
+                }
+            }
+
+            // Fazer habitantes fugirem quando player se aproxima
+            gameState.buildings.forEach(building => {
+                if (!building.destroyed) {
+                    const distance = Math.sqrt((player.x - building.x) ** 2 + (player.y - building.y) ** 2);
+                    
+                    // Habitantes saem correndo quando furacão se aproxima
+                    if (distance < 100 && Math.random() < 0.05) {
+                        const numInhabitants = Math.floor(Math.random() * 3) + 1;
+                        for (let i = 0; i < numInhabitants; i++) {
+                            const angle = Math.random() * Math.PI * 2;
+                            const spawnDistance = 20 + Math.random() * 30;
+                            const x = building.x + Math.cos(angle) * spawnDistance;
+                            const y = building.y + Math.sin(angle) * spawnDistance;
+                            gameState.inhabitants.push(new Inhabitant(x, y));
+                        }
+                    }
+                }
+            });
+
+            // Destruir prédios e crescer
+            gameState.buildings.forEach(building => {
+                if (!building.destroyed && building.isPlayerColliding(player)) {
+                    const damage = speed * 2; // Dano baseado na velocidade
+                    const points = building.takeDamage(damage);
+                    if (points > 0) {
+                        // Ganhar energia e crescer destruindo prédios
+                        player.energy += 5;
+                        const growthAmount = building.type === 'house' ? 0.5 : building.type === 'skyscraper' ? 2 : 1;
+                        player.size = Math.min(player.maxSize, player.size + growthAmount);
+                        
+                        // Adicionar partículas extras ao crescer
+                        if (player.particles.length < player.size * 0.8) {
+                            for (let i = 0; i < Math.floor(growthAmount); i++) {
+                                player.particles.push(new Particle(
+                                    player.x, player.y, 
+                                    Math.random() * player.size, 
+                                    0.05 + Math.random() * 0.1, '#4488ff'
+                                ));
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Atualizar inimigos
+            gameState.enemies.forEach(enemy => {
+                enemy.update();
+                
+                // Verificar colisão com jogador
+                const dx = enemy.x - player.x;
+                const dy = enemy.y - player.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < (enemy.size + player.size) * 0.7) {
+                    player.energy -= 3;
+                }
+            });
+
+            // Adicionar mais inimigos com o tempo
+            if (Math.random() < 0.001 && gameState.enemies.length < 6) {
+                let x, y;
+                do {
+                    x = Math.random() * gameState.mapSize;
+                    y = Math.random() * gameState.mapSize;
+                } while (Math.sqrt((x - player.x) ** 2 + (y - player.y) ** 2) < 400);
+                
+                gameState.enemies.push(new Enemy(x, y));
+            }
+
+            // Game Over
+            if (player.energy <= 0) {
+                gameState.gameRunning = false;
+                document.getElementById('final-time').textContent = Math.floor(gameState.gameTime);
+                document.getElementById('game-over').style.display = 'block';
+            }
+
+            // Atualizar tempo
+            gameState.gameTime += 1/60;
+
+            // Atualizar UI
+            document.getElementById('energy-text').textContent = Math.floor(player.energy);
+            document.getElementById('energy-fill').style.width = player.energy + '%';
+            document.getElementById('speed-text').textContent = Math.floor(speed * 10);
+            document.getElementById('score-text').textContent = gameState.score;
+            document.getElementById('time-text').textContent = Math.floor(gameState.gameTime);
+        }
+
+        // Função de renderização
+       function render() {
             // Limpar canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Desenhar fundo do mapa
+            // Desenhar fundo do mapa (planície texana - verde único)
             ctx.fillStyle = '#90EE90';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Margem do mapa jogável
+            // Adiciona a margem preta do mapa jogável (margem deve ficar sobre o fundo e sob os objetos)
             ctx.save();
             ctx.strokeStyle = "black";
             ctx.lineWidth = 5;
@@ -199,41 +1255,167 @@
             );
             ctx.restore();
 
-            // Resto igual ao seu render...
-            // Prédios, zonas de vento, furacões pequenos, habitantes, inimigos, jogador, mini-mapa, efeito de energia baixa
-            // --- [copie o resto do render aqui] ---
+           
+            // Desenhar prédios
+            gameState.buildings.forEach(building => {
+                const screenX = building.x - gameState.camera.x;
+                const screenY = building.y - gameState.camera.y;
+                
+                // Só desenhar se estiver na tela
+                if (screenX > -building.width && screenX < canvas.width + building.width &&
+                    screenY > -building.height && screenY < canvas.height + building.height) {
+                    building.draw();
+                }
+            });
+
+            // Desenhar zonas de vento
+            gameState.windZones.forEach(zone => {
+                const screenX = zone.x - gameState.camera.x;
+                const screenY = zone.y - gameState.camera.y;
+                
+                // Só desenhar se estiver na tela
+                if (screenX > -zone.size && screenX < canvas.width + zone.size &&
+                    screenY > -zone.size && screenY < canvas.height + zone.size) {
+                    zone.draw();
+                }
+            });
+
+            // Desenhar furacões pequenos
+            gameState.smallHurricanes.forEach(hurricane => {
+                const screenX = hurricane.x - gameState.camera.x;
+                const screenY = hurricane.y - gameState.camera.y;
+                
+                // Só desenhar se estiver na tela
+                if (screenX > -hurricane.size && screenX < canvas.width + hurricane.size &&
+                    screenY > -hurricane.size && screenY < canvas.height + hurricane.size) {
+                    hurricane.draw();
+                }
+            });
+
+            // Desenhar habitantes (pontinhos que fogem)
+            gameState.inhabitants.forEach(inhabitant => {
+                const screenX = inhabitant.x - gameState.camera.x;
+                const screenY = inhabitant.y - gameState.camera.y;
+                
+                // Só desenhar se estiver na tela
+                if (screenX > -10 && screenX < canvas.width + 10 &&
+                    screenY > -10 && screenY < canvas.height + 10) {
+                    inhabitant.draw();
+                }
+            });
+
+            // Desenhar inimigos (furacões grandes)
+            gameState.enemies.forEach(enemy => {
+                const screenX = enemy.x - gameState.camera.x;
+                const screenY = enemy.y - gameState.camera.y;
+                
+                // Só desenhar se estiver na tela
+                if (screenX > -enemy.size && screenX < canvas.width + enemy.size &&
+                    screenY > -enemy.size && screenY < canvas.height + enemy.size) {
+                    // Desenhar centro
+                    ctx.fillStyle = '#ff2222';
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, enemy.size * 0.3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Desenhar partículas
+                    enemy.particles.forEach(particle => {
+                        ctx.save();
+                        ctx.globalAlpha = particle.life;
+                        ctx.fillStyle = particle.color;
+                        ctx.beginPath();
+                        ctx.arc(particle.x - gameState.camera.x, particle.y - gameState.camera.y, 2, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.restore();
+                    });
+                }
+            });
+
+            // Desenhar jogador (sempre no centro da tela)
+            const player = gameState.player;
+            const playerScreenX = canvas.width / 2;
+            const playerScreenY = canvas.height / 2;
+            
+            // Centro do furacão
+            ctx.fillStyle = '#2266cc';
+            ctx.beginPath();
+            ctx.arc(playerScreenX, playerScreenY, player.size * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Partículas do jogador
+            player.particles.forEach(particle => {
+                ctx.save();
+                ctx.globalAlpha = particle.life;
+                ctx.fillStyle = particle.color;
+                ctx.beginPath();
+                ctx.arc(particle.x - gameState.camera.x, particle.y - gameState.camera.y, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // Mini-mapa
+            const miniMapSize = 150;
+            const miniMapX = canvas.width - miniMapSize - 20;
+            const miniMapY = 20;
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(miniMapX, miniMapY, miniMapSize, miniMapSize);
+
+            // Escala do mini-mapa
+            const scale = miniMapSize / gameState.mapSize;
+
+            // Desenhar jogador no mini-mapa
+            ctx.fillStyle = '#4488ff';
+            ctx.beginPath();
+            ctx.arc(miniMapX + player.x * scale, miniMapY + player.y * scale, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Desenhar inimigos no mini-mapa
+            ctx.fillStyle = '#ff4444';
+            gameState.enemies.forEach(enemy => {
+                ctx.beginPath();
+                ctx.arc(miniMapX + enemy.x * scale, miniMapY + enemy.y * scale, 2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Desenhar zonas de vento no mini-mapa
+            ctx.fillStyle = '#44ff44';
+            gameState.windZones.forEach(zone => {
+                ctx.beginPath();
+                ctx.arc(miniMapX + zone.x * scale, miniMapY + zone.y * scale, 2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Borda do mini-mapa
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(miniMapX, miniMapY, miniMapSize, miniMapSize);
+
+            // Efeito de baixa energia
+            if (player.energy < 30) {
+                ctx.save();
+                ctx.globalAlpha = 0.3 * (1 - player.energy / 30);
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.restore();
+            }
         }
 
         // Loop principal do jogo
         function gameLoop() {
             update();
             render();
-            if (gameState.gameRunning) {
-                requestAnimationFrame(gameLoop);
-            }
+            requestAnimationFrame(gameLoop);
         }
 
         // Função para reiniciar o jogo
         function restartGame() {
             initGame();
-            gameState.gameRunning = true;
-            document.getElementById('game-over').style.display = 'none';
-            gameLoop();
         }
 
-        // Inicialização da tela inicial
-        document.getElementById("playButton").addEventListener("click", () => {
-            document.getElementById("startScreen").style.display = "none";
-            canvas.style.display = "block";
-            initGame();
-            gameState.gameRunning = true;
-            gameLoop();
-        });
-
-        // Inicializa o jogo ao abrir a página, mas NÃO começa o loop até clicar em jogar
+        // Inicializar e começar o jogo
         initGame();
-
-        // O loop começa SOMENTE ao clicar em "Jogar"
+        gameLoop();
     </script>
 </body>
 </html>
