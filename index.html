@@ -263,6 +263,8 @@
                 this.maxSize = 200;
                 this.rotation = 0;
                 this.particles = [];
+                this.chaseTimer = 0;
+                this.chaseTimeout = 4 + Math.random() * 2; // segundos, fps...
                 
                 // Estados possíveis: "fugindo", "caçando crescimento", "perseguindo player"
                 this.state = "caçando crescimento"; 
@@ -280,50 +282,68 @@
                 const dxPlayer = player.x - this.x;
                 const dyPlayer = player.y - this.y;
                 const distPlayer = Math.sqrt(dxPlayer * dxPlayer + dyPlayer * dyPlayer);
-        
-                // --- DECISÃO DE ESTADO ---
+
+                 // Controle do tempo de perseguição
+                if (this.state === "perseguindo player") {
+                    this.chaseTimer += 1/60; // 1 frame
+                    if (this.chaseTimer > this.chaseTimeout) {
+                        this.state = "caçando crescimento";
+                        this.target = null;
+                        this.chaseTimer = 0;
+                    }
+                }
+
+                   // Decisão de estado
                 if (player.size > this.size * 1.2) {
                     this.state = "fugindo";
                     this.target = null;
+                    this.chaseTimer = 0;
                 } else {
-                    // Checar furacões menores próximos
-                    let smallerEnemyNearby = null;
-                    let nearestDist = Infinity;
-                    gameState.enemies.forEach(enemy => {
-                        if (enemy !== this && enemy.size < this.size * 0.8) {
-                            const dx = enemy.x - this.x;
-                            const dy = enemy.y - this.y;
-                            const d = Math.sqrt(dx * dx + dy * dy);
-                            if (d < nearestDist && d < 300) { // só caça se estiver próximo
-                                nearestDist = d;
-                                smallerEnemyNearby = enemy;
-                            }
+                    const distPlayer = Math.sqrt((player.x - this.x) ** 2 + (player.y - this.y) ** 2);
+                    // Se player está perto e inimigo é maior, inicia/continua perseguição
+                    if (distPlayer < 350 && this.size > player.size * 0.8) {
+                        if (this.state !== "perseguindo player") {
+                            this.state = "perseguindo player";
+                            this.target = player;
+                            this.chaseTimer = 0;
                         }
-                    });
-        
-                    if (smallerEnemyNearby) {
-                        this.state = "caçando crescimento";
-                        this.target = smallerEnemyNearby;
-                    } else if (this.size > player.size * 0.8) {
-                        // Só persegue o player se for maior
-                        this.state = "perseguindo player";
-                        this.target = player;
-                    } else {
-                        // Caso contrário: buscar zona de vento
-                        let nearestZone = null;
-                        let zoneDist = Infinity;
-                        gameState.windZones.forEach(zone => {
-                            const dx = zone.x - this.x;
-                            const dy = zone.y - this.y;
-                            const d = Math.sqrt(dx * dx + dy * dy);
-                            if (d < zoneDist) {
-                                zoneDist = d;
-                                nearestZone = zone;
+                        // se já está perseguindo, timer é controlado lá no início do update()
+                    } else if (this.state !== "perseguindo player") {
+                        // Caçar furacões menores próximos
+                        let smallerEnemyNearby = null;
+                        let nearestDist = Infinity;
+                        gameState.enemies.forEach(enemy => {
+                            if (enemy !== this && enemy.size < this.size * 0.8) {
+                                const dx = enemy.x - this.x;
+                                const dy = enemy.y - this.y;
+                                const d = Math.sqrt(dx * dx + dy * dy);
+                                if (d < nearestDist && d < 300) {
+                                    nearestDist = d;
+                                    smallerEnemyNearby = enemy;
+                                }
                             }
                         });
-                        if (nearestZone) {
+                
+                        if (smallerEnemyNearby) {
                             this.state = "caçando crescimento";
-                            this.target = nearestZone;
+                            this.target = smallerEnemyNearby;
+                        } else {
+                            // Buscar zona de vento
+                            let nearestZone = null;
+                            let zoneDist = Infinity;
+                            gameState.windZones.forEach(zone => {
+                                const dx = zone.x - this.x;
+                                const dy = zone.y - this.y;
+                                const d = Math.sqrt(dx * dx + dy * dy);
+                                if (d < zoneDist) {
+                                    zoneDist = d;
+                                    nearestZone = zone;
+                                }
+                            });
+                            if (nearestZone) {
+                                this.state = "caçando crescimento";
+                                this.target = nearestZone;
+                            }
                         }
                     }
                 }
