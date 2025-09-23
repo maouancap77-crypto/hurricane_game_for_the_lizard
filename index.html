@@ -173,6 +173,9 @@
             <div>🟢 Zonas verdes = Recarregam energia e fazem furacões nascerem</div>
             <div>🔴 Furacões vermelhos = FUJA! São maiores que você</div>
         </div>
+        <div id="dash-indicator" style="position:absolute;top:80px;left:20px;z-index:30;font-size:1.2em;color:#FFD700;font-weight:bold;display:none;">
+            DASH ATIVADO!
+        </div>
         <div id="game-over">
             <h2>Fim de Jogo!</h2>
             <p>Seu furacão se dissipou...</p>
@@ -803,6 +806,7 @@
             gameState.player.vy = 0;
             gameState.player.energy = 100;
             gameState.player.particles = [];
+            gameState.player.dashActive = false;
             gameState.enemies = [];
             gameState.smallHurricanes = [];
             gameState.windZones = [];
@@ -1039,7 +1043,11 @@
                 player.vy += inputY * dashForce;
                 player.energy -= 2;
                 isDashing = true;
+                player.dashActive = true;
                 gameState.keys[' '] = false; // Evitar spam
+            }
+            } else {
+                player.dashActive = false;
             }
 
             // Aplicar atrito
@@ -1410,6 +1418,18 @@
             ctx.arc(playerScreenX, playerScreenY, player.size * 0.4, 0, Math.PI * 2);
             ctx.fill();
 
+           //Efeito do Dash
+            if (player.dashActive) {
+                ctx.save();
+                ctx.strokeStyle = '#FFD700';
+                ctx.lineWidth = 6;
+                ctx.globalAlpha = 0.7;
+                ctx.beginPath();
+                ctx.arc(player.x - gameState.camera.x, player.y - gameState.camera.y, player.size * 0.5, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+
             // Partículas do jogador
             player.particles.forEach(particle => {
                 ctx.save();
@@ -1420,6 +1440,8 @@
                 ctx.fill();
                 ctx.restore();
             });
+
+           
 
             // Mini-mapa
             const miniMapSize = 150;
@@ -1467,6 +1489,7 @@
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.restore();
             }
+           document.getElementById('dash-indicator').style.display = player.dashActive ? 'block' : 'none';
         }
 
         function gameLoop() {
